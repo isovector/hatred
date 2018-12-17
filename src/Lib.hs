@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE EmptyCase              #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE GADTs                  #-}
@@ -12,7 +13,7 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators          #-}
-{-# OPTIONS_GHC -ddump-splices          #-}
+{-# OPTIONS_GHC -ddump-splices      #-}
 
 module Lib where
 
@@ -29,7 +30,8 @@ import Text.Megaparsec.Char
 import TH
 
 
-genParser "myParser" [''Hello, ''World]
+
+[prose| hello world \World |]
 
 
 
@@ -61,8 +63,8 @@ respectIndentation z =
        in unlines $ a' : fmap (drop $ length spaces) as
 
 
-prose :: Member String r => String -> Document r
-prose = doc . respectIndentation
+-- prose :: Member String r => String -> Document r
+-- prose = doc . respectIndentation
 
 
 
