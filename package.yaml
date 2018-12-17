@@ -24,6 +24,10 @@ dependencies:
 - HPDF
 - lens
 - monoid-extras
+- raw-strings-qq
+- fastsum
+- template-haskell
+
 
 library:
   source-dirs: src
