@@ -27,6 +27,7 @@ dependencies:
 - raw-strings-qq
 - fastsum
 - template-haskell
+- megaparsec
 
 
 library:

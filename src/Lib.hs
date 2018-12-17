@@ -12,55 +12,26 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators          #-}
+{-# OPTIONS_GHC -ddump-splices          #-}
 
 module Lib where
 
+import Types
+import Data.Foldable
 import Data.Monoid ((<>))
 import Data.Coerce
 import Data.Functor.Const
 import Text.RawString.QQ
 import Data.Char (isSpace)
 import Language.Haskell.TH.Quote
-
-data Sum ts where
-  One  :: a -> Sum '[a]
-  Cons :: Either a (Sum as) -> Sum (a ': as)
-
-
-class Member a as where
-  inject :: a -> Sum as
-  cast :: Sum as -> Maybe a
-
-instance {-# OVERLAPPING #-} Member a '[a] where
-  inject = One
-  cast = Just . run
-
-instance Member a (a ': as) where
-  inject = Cons . Left
-  cast (Cons (Left a)) = Just a
-  cast _ = Nothing
-
-instance {-# OVERLAPPABLE #-} Member a as => Member a (b ': as) where
-  inject = Cons . Right . inject
-  cast (Cons (Right a)) = cast a
-  cast _ = Nothing
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import TH
 
 
-type Document r = [Sum r]
-
-decompose :: Sum (a ': as) -> Either a (Sum as)
-decompose (Cons z) = z
+genParser "myParser" [''Hello, ''World]
 
 
-weaken :: Sum as -> Sum (a ': as)
-weaken = Cons . Right
-
-doc :: Member a r => a -> Document r
-doc = pure . inject
-
-
-data World = World
-  deriving Show
 
 
 interpret
@@ -76,9 +47,6 @@ relay
     -> Document rs
 relay f = (maybe [] f . cast =<<)
 
-
-run :: Sum '[r] -> r
-run (One a) = a
 
 getDoc :: Monoid r => Document '[r] -> r
 getDoc = foldMap run
@@ -97,20 +65,47 @@ prose :: Member String r => String -> Document r
 prose = doc . respectIndentation
 
 
-foo :: Member String r => Document r
-foo = prose [r|
-  hello \world
-  |]
 
 
-worlded :: String
-worlded = getDoc
-        . interpret (doc . show @World)
-        . relay parseWorld
-        $ foo
-  where
-    parseWorld ('\\' : 'w' : 'o' : 'r' : 'l' : 'd' : xs) =
-      doc World <> parseWorld xs
-    parseWorld (a : as) = doc [a] <> parseWorld as
-    parseWorld [] = []
+parseACommand
+    :: ( Member Hello r
+       , Member World r
+       )
+    => Parsec () String (Document r)
+parseACommand = do
+  char '\\'
+  cmd <- asum [ string "Hello"
+              , string "World"
+              ]
+  case cmd of
+    "Hello" -> doc <$> commandParser @Hello
+    "World" -> doc <$> commandParser @World
+
+
+parseDocument
+    :: ( Member Hello r
+       , Member World r
+       , Member String r
+       )
+    => Parsec () String (Document r)
+parseDocument = do
+  p <- Just <$> (try $ lookAhead anyChar) <|> pure Nothing
+  case p of
+    Just '\\' -> (<>) <$> parseACommand <*> parseDocument
+    Just a -> (<>) <$> (doc <$> many (notChar '\\')) <*> parseDocument
+    Nothing -> pure []
+
+
+
+doParse
+    :: Member String r
+    => Parsec () String (Document r)
+    -> String
+    -> Document r
+doParse p s = either (doc . show) id $ parse p "" s
+
+
+get :: Document '[Hello, World, String] -> String
+get = getDoc . interpret (doc . show) . interpret (doc . show)
+
 
