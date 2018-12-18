@@ -110,4 +110,3 @@ doParse p s = either (doc . show) id $ parse p "" s
 get :: Document '[Hello, World, String] -> String
 get = getDoc . interpret (doc . show) . interpret (doc . show)
 
-

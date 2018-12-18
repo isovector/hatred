@@ -24,10 +24,17 @@ import Data.Char (isSpace)
 import Language.Haskell.TH.Quote
 import Text.Megaparsec
 import Text.Megaparsec.Char
+import Language.Haskell.TH.Syntax
 
 data Sum ts where
   One  :: a -> Sum '[a]
   Cons :: Either a (Sum as) -> Sum (a ': as)
+
+instance (Lift (Sum ts), Lift t) => Lift (Sum (t ': ts)) where
+  lift (Cons a) = [| Cons $(lift a) |]
+
+instance {-# OVERLAPPING #-} (Lift t) => Lift (Sum '[t]) where
+  lift (One a) = [| One $(lift a) |]
 
 
 class Member a as where
