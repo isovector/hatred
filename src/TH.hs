@@ -7,13 +7,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# OPTIONS_GHC -Wall    #-}
 
 module TH
   ( prose
   ) where
 
 import Data.Bifunctor
-import Data.Traversable (for)
 import Data.Monoid
 import Data.Maybe
 import Language.Haskell.TH
@@ -45,11 +45,6 @@ commands = do
   ClassI _ insts <- reify ''IsCommand
   pure $ mapMaybe isFine insts
 
-
-getMember :: Name -> Name -> Q Type
-getMember r n = [t|
-    Member $(pure $ ConT n) $(pure $ VarT r)
-  |]
 
 
 getNameString :: Name -> String
@@ -91,33 +86,12 @@ makeParser ns = [| do
      )
   |]
 
-makeParserType :: [Name] -> Q Type
-makeParserType ns = do
-  r <- newName "r"
-  z <- traverse (getMember r) $ ''String : ns
-  pure $ ForallT [PlainTV r] z $
-    ConT ''Parsec
-      `AppT` TupleT 0
-      `AppT` ConT ''String
-      `AppT` (ConT ''Document `AppT` VarT r)
-
-makeDocType :: [Name] -> Q (Type, Name)
-makeDocType ns = do
-  r <- newName "r"
-  z <- traverse (getMember r) $ ''String : ns
-  pure
-    ( ForallT [PlainTV r] z $ ConT ''Document `AppT` VarT r
-    , r
-    )
-
 
 genParser :: Name -> [Name] -> Q [Dec]
 genParser name ns = do
-  typ  <- makeParserType ns
   body <- makeParser ns
   pure
-    [ SigD name typ
-    , ValD (VarP name) (NormalB body) []
+    [ ValD (VarP name) (NormalB body) []
     ]
 
 
@@ -128,16 +102,16 @@ stupidParse = do
   p <- peekChar
   case p of
     Just '\\' -> do
-      char '\\'
+      _ <- char '\\'
       z <- peekChar
       case z of
         Just '\\' -> do
-          char '\\'
+          _ <- char '\\'
           stupidParse
         Just _ -> do
           (:) <$> (many $ noneOf "\\{ ") <*> stupidParse
         Nothing -> error "bad!!"
-    Just a -> many (notChar '\\') *> stupidParse
+    Just _ -> many (notChar '\\') *> stupidParse
     Nothing -> pure []
 
 
@@ -146,53 +120,39 @@ usedCommands s =
   either (error "my parser is shit") id $ parse stupidParse "" s
 
 
-makeTuple :: [Type] -> Type
-makeTuple t = foldl (AppT) (TupleT $ length t) t
-
-proseFor :: [Name] -> String -> Q [Dec]
+proseFor :: [Name] -> String -> Q Exp
 proseFor ns str = do
-  name  <- newName "prose"
   pname <- newName "parser"
-
-
   parser <- genParser pname ns
-  (doctype, r) <- makeDocType ns
-  z <- traverse (getMember r) $ ''String : ns
 
   x <- [|
       either (error "fuck") id
         $ parse
             (parseDocument
-                @($(pure $ makeTuple z))
                 $(pure $ VarE pname))
             ""
             str |]
 
-
-  pure $
-    [ SigD name doctype
-    , ValD (VarP name) (NormalB x) parser
-    ]
+  pure $ LetE parser x
 
 
 parseDocument
-    :: forall c r
-     . ( c
-       , Member String r
+    :: forall r
+     . ( Member String r
        )
-    => (c => Parsec () String (Document r))
+    => (Parsec () String (Document r))
     -> Parsec () String (Document r)
 parseDocument f = do
   p <- Just <$> (try $ lookAhead anyChar) <|> pure Nothing
   case p of
-    Just '\\' -> (<>) <$> f <*> parseDocument @c f
-    Just a -> (<>) <$> (doc <$> many (notChar '\\')) <*> parseDocument @c f
+    Just '\\' -> (<>) <$> f <*> parseDocument f
+    Just _ -> (<>) <$> (doc <$> many (notChar '\\')) <*> parseDocument f
     Nothing -> pure []
 
 
 prose :: QuasiQuoter
 prose = QuasiQuoter
-  { quoteDec = \str -> do
+  { quoteExp = \str -> do
       let used = usedCommands str
       cmds <- commands
       let maps = fmap (first getNameString) $ zip cmds cmds
@@ -204,7 +164,7 @@ prose = QuasiQuoter
       let Just names = traverse (flip lookup maps) used
       proseFor names str
 
-  , quoteExp = error ""
+  , quoteDec = error ""
   , quoteType = error ""
   , quotePat = error ""
   }

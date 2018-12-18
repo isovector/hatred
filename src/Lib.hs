@@ -1,19 +1,21 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE EmptyCase              #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE PolyKinds              #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeApplications       #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE TypeOperators          #-}
-{-# OPTIONS_GHC -ddump-splices      #-}
+{-# LANGUAGE ConstraintKinds           #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE EmptyCase                 #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE PartialTypeSignatures     #-}
+{-# LANGUAGE PolyKinds                 #-}
+{-# LANGUAGE QuasiQuotes               #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE TypeApplications          #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeFamilyDependencies    #-}
+{-# LANGUAGE TypeOperators             #-}
+{-# OPTIONS_GHC -ddump-splices         #-}
 
 module Lib where
 
@@ -31,7 +33,8 @@ import TH
 
 
 
-[prose| hello world \World |]
+foo = [prose| hello world \World |]
+
 
 
 
@@ -84,18 +87,18 @@ parseACommand = do
     "World" -> doc <$> commandParser @World
 
 
-parseDocument
-    :: ( Member Hello r
-       , Member World r
-       , Member String r
-       )
-    => Parsec () String (Document r)
-parseDocument = do
-  p <- Just <$> (try $ lookAhead anyChar) <|> pure Nothing
-  case p of
-    Just '\\' -> (<>) <$> parseACommand <*> parseDocument
-    Just a -> (<>) <$> (doc <$> many (notChar '\\')) <*> parseDocument
-    Nothing -> pure []
+-- parseDocument
+--     :: ( Member Hello r
+--        , Member World r
+--        , Member String r
+--        )
+--     => Parsec () String (Document r)
+-- parseDocument = do
+--   p <- Just <$> (try $ lookAhead anyChar) <|> pure Nothing
+--   case p of
+--     Just '\\' -> (<>) <$> parseACommand <*> parseDocument
+--     Just a -> (<>) <$> (doc <$> many (notChar '\\')) <*> parseDocument
+--     Nothing -> pure []
 
 
 
