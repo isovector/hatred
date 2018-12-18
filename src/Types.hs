@@ -1,5 +1,8 @@
 {-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE DefaultSignatures      #-}
+{-# LANGUAGE DeriveAnyClass         #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE GADTs                  #-}
@@ -25,6 +28,7 @@ import Language.Haskell.TH.Quote
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Language.Haskell.TH.Syntax
+import GHC.Generics
 
 data Sum ts where
   One  :: a -> Sum '[a]
@@ -67,6 +71,32 @@ weaken = Cons . Right
 
 class IsCommand a where
   commandParser :: Parsec () String a
+  default commandParser
+      :: (Generic a, GIsCommand (Rep a))
+      => Parsec () String a
+  commandParser = to <$> gcommandParser
+
+
+class GIsCommand a where
+  gcommandParser :: Parsec () String (a x)
+
+instance GIsCommand U1 where
+  gcommandParser = pure U1
+
+instance IsCommand a => GIsCommand (K1 _1 a) where
+  gcommandParser = K1 <$> do
+    char '{'
+    z <- commandParser
+    char '}'
+    pure z
+
+instance (GIsCommand f, GIsCommand g) => GIsCommand (f :*: g) where
+  gcommandParser = (:*:) <$> gcommandParser <*> gcommandParser
+
+instance (GIsCommand f) => GIsCommand (M1 _1 _2 f) where
+  gcommandParser = M1 <$> gcommandParser
+
+
 
 run :: Sum '[r] -> r
 run (One a) = a
@@ -86,8 +116,5 @@ instance IsCommand Hello where
     Hello <$> pure z
 
 data World = World
-  deriving Show
-
-instance IsCommand World where
-  commandParser = pure World
+  deriving (Generic, Show, IsCommand)
 
