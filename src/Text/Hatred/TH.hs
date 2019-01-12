@@ -1,13 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ConstraintKinds     #-}
 {-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# OPTIONS_GHC -Wall    #-}
+{-# OPTIONS_GHC -Wall            #-}
 
 module Text.Hatred.TH
   ( prose
@@ -15,7 +9,6 @@ module Text.Hatred.TH
 
 import Data.List (nub)
 import Data.Bifunctor
-import Data.Monoid
 import Data.Maybe
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
@@ -138,8 +131,7 @@ proseFor ns str = do
 
 
 parseDocument
-    :: forall r
-     . ( Member String r
+    :: ( Member String r
        )
     => (Parsec () String (Document r))
     -> Parsec () String (Document r)

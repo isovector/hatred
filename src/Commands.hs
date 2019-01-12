@@ -32,11 +32,6 @@ instance IsCommand Hello where
 data World = World
   deriving (Generic, Show, IsCommand)
 
-
-instance IsCommand String where
-  commandParser =
-    many . satisfy $ \a -> a /= '{' && a /= '}'
-
 data Chapter = Chapter String
   deriving (Generic, Show, IsCommand)
 

@@ -1,22 +1,16 @@
-{-# LANGUAGE ConstraintKinds        #-}
-{-# LANGUAGE DataKinds              #-}
-{-# LANGUAGE DefaultSignatures      #-}
-{-# LANGUAGE DeriveAnyClass         #-}
-{-# LANGUAGE DeriveGeneric          #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE PolyKinds              #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeApplications       #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DefaultSignatures     #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeOperators         #-}
 
-module Text.Hatred.Types where
+module Text.Hatred.Types
+  ( module Text.Hatred.Types
+  , Generic
+  ) where
 
 import Data.Char (isSpace)
 import Data.Coerce
@@ -29,6 +23,7 @@ import Language.Haskell.TH.Syntax
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.RawString.QQ
+
 
 data Sum ts where
   One  :: a -> Sum '[a]
@@ -103,6 +98,11 @@ instance (GIsCommand f, GIsCommand g) => GIsCommand (f :*: g) where
 
 instance (GIsCommand f) => GIsCommand (M1 _1 _2 f) where
   gcommandParser = M1 <$> gcommandParser
+
+
+instance IsCommand String where
+  commandParser =
+    many . satisfy $ \a -> a /= '{' && a /= '}'
 
 
 

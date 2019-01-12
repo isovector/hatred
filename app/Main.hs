@@ -48,6 +48,7 @@ makeFile (header, content) = unlines
   [ "{-# LANGUAGE FlexibleContexts          #-}"
   , "{-# LANGUAGE NoMonomorphismRestriction #-}"
   , "{-# LANGUAGE QuasiQuotes               #-}"
+  , "{-# LANGUAGE EmptyCase                 #-}"
   , header
   , "import Text.Hatred.TH (prose)"
   , ""

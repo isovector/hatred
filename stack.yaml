@@ -4,10 +4,6 @@ packages:
   - .
   - extra-dep: true
     location:
-      git: https://github.com/aszlig/HPDF.git
-      commit: ea56db2e2f519f4679de0ce2c193cd56831781e4
-  - extra-dep: true
-    location:
       git: https://github.com/patrickt/fastsum.git
       commit: dc5020d447b510a11650692d2d61864ec458ea2c
 

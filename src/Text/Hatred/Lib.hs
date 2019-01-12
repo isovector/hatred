@@ -17,7 +17,7 @@
 {-# LANGUAGE TypeOperators             #-}
 {-# OPTIONS_GHC -ddump-splices         #-}
 
-module Lib where
+module Text.Hatred.Lib where
 
 import Data.Char (isSpace)
 import Data.Coerce
