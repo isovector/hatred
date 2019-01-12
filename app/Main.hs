@@ -49,7 +49,7 @@ makeFile (header, content) = unlines
   , "{-# LANGUAGE NoMonomorphismRestriction #-}"
   , "{-# LANGUAGE QuasiQuotes               #-}"
   , header
-  , "import TH (prose)"
+  , "import Text.Hatred.TH (prose)"
   , ""
   , "contents = [prose|" ++ init content ++ "|]"
   ]

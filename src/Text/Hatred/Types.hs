@@ -16,19 +16,19 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators          #-}
 
-module Types where
+module Text.Hatred.Types where
 
-import Data.Foldable
-import Data.Monoid ((<>))
-import Data.Coerce
-import Data.Functor.Const
-import Text.RawString.QQ
 import Data.Char (isSpace)
+import Data.Coerce
+import Data.Foldable
+import Data.Functor.Const
+import Data.Monoid ((<>))
+import GHC.Generics
 import Language.Haskell.TH.Quote
+import Language.Haskell.TH.Syntax
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Language.Haskell.TH.Syntax
-import GHC.Generics
+import Text.RawString.QQ
 
 data Sum ts where
   One  :: a -> Sum '[a]

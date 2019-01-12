@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# OPTIONS_GHC -Wall    #-}
 
-module TH
+module Text.Hatred.TH
   ( prose
   ) where
 
@@ -23,7 +23,7 @@ import Language.Haskell.TH.Syntax
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Data.Foldable
-import Types
+import Text.Hatred.Types
 
 
 -- parseACommand

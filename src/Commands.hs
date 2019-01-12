@@ -5,7 +5,7 @@
 
 module Commands where
 
-import Types
+import Text.Hatred.Types
 import GHC.Generics
 import Data.Foldable
 import Data.Monoid ((<>))
