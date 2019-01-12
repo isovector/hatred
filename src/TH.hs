@@ -13,6 +13,7 @@ module TH
   ( prose
   ) where
 
+import Data.List (nub)
 import Data.Bifunctor
 import Data.Monoid
 import Data.Maybe
@@ -117,7 +118,7 @@ stupidParse = do
 
 usedCommands :: String -> [String]
 usedCommands s =
-  either (error "my parser is shit") id $ parse stupidParse "" s
+  either (error "my parser is shit") id $ fmap nub $ parse stupidParse "" s
 
 
 proseFor :: [Name] -> String -> Q Exp

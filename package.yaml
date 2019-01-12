@@ -34,7 +34,7 @@ library:
   source-dirs: src
 
 executables:
-  hatred-exe:
+  hatred-pre:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

@@ -34,6 +34,14 @@ data Sum ts where
   One  :: a -> Sum '[a]
   Cons :: Either a (Sum as) -> Sum (a ': as)
 
+
+instance {-# OVERLAPPING #-} Show a => Show (Sum '[a]) where
+  show (One a) = show a
+
+instance (Show a, Show (Sum as)) => Show (Sum (a ': as)) where
+  show (Cons (Left a))  = show a
+  show (Cons (Right a)) = show a
+
 instance (Lift (Sum ts), Lift t) => Lift (Sum (t ': ts)) where
   lift (Cons a) = [| Cons $(lift a) |]
 
@@ -104,17 +112,3 @@ run (One a) = a
 
 doc :: Member a r => a -> Document r
 doc = pure . inject
-
-data Hello = Hello String
-  deriving Show
-
-instance IsCommand Hello where
-  commandParser = do
-    char '{'
-    z <- many . satisfy $ \a -> a /= '{' && a /= '}'
-    char '}'
-    Hello <$> pure z
-
-data World = World
-  deriving (Generic, Show, IsCommand)
-
