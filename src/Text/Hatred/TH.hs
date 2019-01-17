@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# OPTIONS_GHC -Wall            #-}
 
 module Text.Hatred.TH
   ( prose
@@ -17,6 +16,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import Data.Foldable
 import Text.Hatred.Types
+import Data.Semigroup
 
 
 -- parseACommand

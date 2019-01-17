@@ -100,9 +100,12 @@ instance (GIsCommand f) => GIsCommand (M1 _1 _2 f) where
   gcommandParser = M1 <$> gcommandParser
 
 
-instance IsCommand String where
+instance {-# OVERLAPPING #-} IsCommand String where
   commandParser =
     many . satisfy $ \a -> a /= '{' && a /= '}'
+
+instance {-# OVERLAPPABLE #-} IsCommand a => IsCommand [a] where
+  commandParser = many commandParser
 
 
 

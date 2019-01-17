@@ -27,6 +27,7 @@ dependencies:
 - fastsum
 - template-haskell
 - megaparsec
+- recursion-schemes
 
 
 library:
