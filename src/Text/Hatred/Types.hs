@@ -115,3 +115,4 @@ run (One a) = a
 
 doc :: Member a r => a -> Document r
 doc = pure . inject
+

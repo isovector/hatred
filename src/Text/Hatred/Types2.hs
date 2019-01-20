@@ -22,17 +22,19 @@ import Data.Functor.Classes
 import Data.Functor.Compose
 import Data.Bifunctor
 import Data.Coerce
+import Data.Functor.Const
 
 
 data OneOf fs a where
   One :: f a -> OneOf '[f] a
   Cons :: Either (f a) (OneOf fs a) -> OneOf (f ': fs) a
 
-newtype Doc fs = Doc (Compose [] (OneOf fs) (Doc fs))
+newtype Doc fs = Doc [OneOf fs (Doc fs)]
   deriving (Semigroup, Monoid) via [OneOf fs (Doc fs)]
 
-instance (forall x. Show x => Show (OneOf fs x)) => Show (Doc fs) where
-  show (Doc (Compose z)) = show z
+deriving via [OneOf fs (Doc fs)]
+  instance (forall x. Show x => Show (OneOf fs x)) => Show (Doc fs)
+
 
 instance {-# OVERLAPPING #-} Functor f => Functor (OneOf '[f]) where
   fmap f (One a) = One $ fmap f a
@@ -78,7 +80,10 @@ unDoc = coerce
 
 
 doc :: Member f fs => f (Doc fs) -> Doc fs
-doc = Doc . Compose . pure . inject
+doc = Doc . pure . inject
+
+kdoc :: Member (Const a) fs => a -> Doc fs
+kdoc = doc . Const
 
 
 run :: OneOf '[f] a -> f a

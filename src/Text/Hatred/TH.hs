@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Text.Hatred.TH
   ( prose
@@ -17,7 +18,15 @@ import Text.Megaparsec.Char
 import Data.Foldable
 import Text.Hatred.Types
 import Data.Semigroup
+import Data.Functor.Identity
 
+notChar :: (MonadParsec e s m, Token s ~ Char) => Char -> m Char
+notChar c = satisfy (/= c) <?> "not " ++ [c]
+{-# INLINE notChar #-}
+
+anyChar :: ParsecT () String Identity Char
+anyChar = satisfy $ const True
+{-# INLINE anyChar #-}
 
 -- parseACommand
 --     :: ( Member Hello r
