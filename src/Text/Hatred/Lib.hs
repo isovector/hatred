@@ -19,6 +19,8 @@
 
 module Text.Hatred.Lib where
 
+import Control.Monad
+import Control.Applicative
 import Data.Char (isSpace)
 import Data.Coerce
 import Data.Foldable
@@ -32,24 +34,69 @@ import Text.Megaparsec.Char
 import Text.RawString.QQ
 
 
+------------------------------------------------------------------------------
+-- | Fold a document into a single value.
+cata
+    :: ( Functor (OneOf fs)
+       , Monoid a
+       )
+    => (OneOf fs a -> a)
+    -> Doc fs
+    -> a
+cata f (Doc z) = foldMap (f . fmap (cata f)) z
 
 
+------------------------------------------------------------------------------
+-- | Fold a document monadically.
+cataM
+    :: ( Functor (OneOf fs)
+       , Monad m
+       , Monoid a
+       , Foldable (OneOf fs)
+       )
+    => (OneOf fs a -> m a)
+    -> Doc fs
+    -> m a
+cataM f = foldr (liftA2 (<>) . cataM f . Doc . pure)
+                (pure mempty)
+        . unDoc
+
+
+------------------------------------------------------------------------------
+-- | Replace a capability with a subdocument.
+cata1
+    :: Functor (OneOf fs)
+    => (f (Doc (f ': fs)) -> Doc fs)
+    -> Doc (f ': fs)
+    -> Doc fs
+cata1 f (Doc z) = Doc $ z >>=
+  either (pure . fmap (cata1 f))
+         (unDoc . f)
+    . decompose
+
+
+------------------------------------------------------------------------------
+-- | Replace a constant term with a subdocument.
 interpret
-    :: (r -> Document rs)
-    -> Document (r ': rs)
-    -> Document rs
-interpret f = (either f pure . decompose =<<)
+    :: Functor (OneOf fs)
+    => (k -> Doc fs)
+    -> Doc (Const k ': fs)
+    -> Doc fs
+interpret f = cata1 (f . getConst)
 
 
+------------------------------------------------------------------------------
+-- | Create structure around a capability.
 relay
-    :: Member r rs => (r -> Document rs)
-    -> Document rs
-    -> Document rs
-relay f = (maybe [] f . cast =<<)
-
-
-getDoc :: Monoid r => Document '[r] -> r
-getDoc = foldMap run
+    :: forall f fs
+     . Member f fs
+    => (f (Doc fs) -> Doc fs)
+    -> Doc fs
+    -> Doc fs
+relay f (Doc z) = Doc $ z >>= \x ->
+  case cast @f x of
+    Just y  -> unDoc $ f y
+    Nothing -> pure x
 
 
 respectIndentation :: String -> String
@@ -61,14 +108,7 @@ respectIndentation z =
        in unlines $ a' : fmap (drop $ length spaces) as
 
 
-doParse
-    :: Member String r
-    => Parsec () String (Document r)
-    -> String
-    -> Document r
-doParse p s = either (doc . show) id $ parse p "" s
 
-
--- get :: Document '[Hello, World, String] -> String
+-- get :: Doc '[Hello, World, String] -> String
 -- get = getDoc . interpret (doc . show) . interpret (doc . show)
 

@@ -28,7 +28,7 @@ data OneOf fs a where
   One :: f a -> OneOf '[f] a
   Cons :: Either (f a) (OneOf fs a) -> OneOf (f ': fs) a
 
-newtype Doc fs = Doc [OneOf fs (Doc fs)]
+newtype Doc fs = Doc { unDoc :: [OneOf fs (Doc fs)] }
   deriving (Semigroup, Monoid) via [OneOf fs (Doc fs)]
 
 deriving via [OneOf fs (Doc fs)]
@@ -75,10 +75,6 @@ instance (Member a fs, Members as fs) => Members (a ': as) fs
 instance Members '[] fs
 
 
-unDoc :: Doc fs -> [OneOf fs (Doc fs)]
-unDoc = coerce
-
-
 doc :: Member f fs => f (Doc fs) -> Doc fs
 doc = Doc . pure . inject
 
@@ -123,5 +119,9 @@ instance {-# OVERLAPPING #-} IsCommand String where
 
 instance {-# OVERLAPPABLE #-} IsCommand a => IsCommand [a] where
   commandParser = many commandParser
+
+decompose :: OneOf (f ': fs) a -> Either (OneOf fs a) (f a)
+decompose (Cons (Left fa)) = Right fa
+decompose (Cons (Right e)) = Left e
 
 
