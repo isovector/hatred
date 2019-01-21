@@ -1,76 +1,93 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DerivingVia                #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE QuantifiedConstraints      #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
-module Text.Hatred.Types
-  ( module Text.Hatred.Types
-  , Generic
-  ) where
+module Text.Hatred.Types where
 
-import Data.Char (isSpace)
+import Data.Functor.Classes
+import Data.Functor.Compose
+import Data.Bifunctor
 import Data.Coerce
-import Data.Foldable
 import Data.Functor.Const
-import Data.Monoid ((<>))
 import GHC.Generics
-import Language.Haskell.TH.Quote
-import Language.Haskell.TH.Syntax
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Text.RawString.QQ
 
 
-data Sum ts where
-  One  :: a -> Sum '[a]
-  Cons :: Either a (Sum as) -> Sum (a ': as)
+data OneOf fs a where
+  One :: f a -> OneOf '[f] a
+  Cons :: Either (f a) (OneOf fs a) -> OneOf (f ': fs) a
+
+newtype Doc fs = Doc [OneOf fs (Doc fs)]
+  deriving (Semigroup, Monoid) via [OneOf fs (Doc fs)]
+
+deriving via [OneOf fs (Doc fs)]
+  instance (forall x. Show x => Show (OneOf fs x)) => Show (Doc fs)
 
 
-instance {-# OVERLAPPING #-} Show a => Show (Sum '[a]) where
+instance {-# OVERLAPPING #-} Functor f => Functor (OneOf '[f]) where
+  fmap f (One a) = One $ fmap f a
+
+instance (Functor f, Functor (OneOf fs)) => Functor (OneOf (f ': fs)) where
+  fmap f (Cons a) = Cons $ bimap (fmap f) (fmap f) a
+
+
+instance {-# OVERLAPPING #-} Show (f x) => Show (OneOf '[f] x) where
   show (One a) = show a
 
-instance (Show a, Show (Sum as)) => Show (Sum (a ': as)) where
+instance (Show (f x), Show (OneOf fs x)) => Show (OneOf (f ': fs) x) where
   show (Cons (Left a))  = show a
   show (Cons (Right a)) = show a
 
-instance (Lift (Sum ts), Lift t) => Lift (Sum (t ': ts)) where
-  lift (Cons a) = [| Cons $(lift a) |]
+type KMember a = Member (Const a)
 
-instance {-# OVERLAPPING #-} (Lift t) => Lift (Sum '[t]) where
-  lift (One a) = [| One $(lift a) |]
+class Member f fs where
+  inject :: f a -> OneOf fs a
+  cast :: OneOf fs a -> Maybe (f a)
 
-
-class Member a as where
-  inject :: a -> Sum as
-  cast :: Sum as -> Maybe a
-
-instance {-# OVERLAPPING #-} Member a '[a] where
+instance {-# OVERLAPPING #-} Member f '[f] where
   inject = One
   cast = Just . run
 
-instance Member a (a ': as) where
+instance Member f (f ': fs) where
   inject = Cons . Left
-  cast (Cons (Left a)) = Just a
-  cast _ = Nothing
+  cast (Cons (Left a))  = Just a
+  cast (Cons (Right _)) = Nothing
 
-instance {-# OVERLAPPABLE #-} Member a as => Member a (b ': as) where
+instance Member f fs => Member f (g ': fs) where
   inject = Cons . Right . inject
+  cast (Cons (Left _))  = Nothing
   cast (Cons (Right a)) = cast a
-  cast _ = Nothing
-
-type Document r = [Sum r]
-
-decompose :: Sum (a ': as) -> Either a (Sum as)
-decompose (Cons z) = z
 
 
-weaken :: Sum as -> Sum (a ': as)
-weaken = Cons . Right
+class Members as fs
+instance (Member a fs, Members as fs) => Members (a ': as) fs
+instance Members '[] fs
 
+
+unDoc :: Doc fs -> [OneOf fs (Doc fs)]
+unDoc = coerce
+
+
+doc :: Member f fs => f (Doc fs) -> Doc fs
+doc = Doc . pure . inject
+
+kdoc :: Member (Const a) fs => a -> Doc fs
+kdoc = doc . Const
+
+
+run :: OneOf '[f] a -> f a
+run (One a) = a
 
 class IsCommand a where
   commandParser :: Parsec () String a
@@ -107,12 +124,4 @@ instance {-# OVERLAPPING #-} IsCommand String where
 instance {-# OVERLAPPABLE #-} IsCommand a => IsCommand [a] where
   commandParser = many commandParser
 
-
-
-run :: Sum '[r] -> r
-run (One a) = a
-
-
-doc :: Member a r => a -> Document r
-doc = pure . inject
 

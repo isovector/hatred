@@ -7,18 +7,18 @@ module Text.Hatred.TH
   ( prose
   ) where
 
-import Data.List (nub)
 import Data.Bifunctor
+import Data.Foldable
+import Data.Functor.Identity
+import Data.List (nub)
 import Data.Maybe
+import Data.Semigroup
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax
+import Text.Hatred.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Data.Foldable
-import Text.Hatred.Types
-import Data.Semigroup
-import Data.Functor.Identity
 
 notChar :: (MonadParsec e s m, Token s ~ Char) => Char -> m Char
 notChar c = satisfy (/= c) <?> "not " ++ [c]
@@ -32,7 +32,7 @@ anyChar = satisfy $ const True
 --     :: ( Member Hello r
 --        , Member World r
 --        )
---     => Parsec () String (Document r)
+--     => Parsec () String (Doc r)
 -- parseACommand = do
 --   char '\\'
 --   cmd <- asum [ string "Hello"
@@ -140,16 +140,16 @@ proseFor ns str = do
 
 
 parseDocument
-    :: ( Member String r
+    :: ( KMember String r
        )
-    => (Parsec () String (Document r))
-    -> Parsec () String (Document r)
+    => (Parsec () String (Doc r))
+    -> Parsec () String (Doc r)
 parseDocument f = do
   p <- Just <$> (try $ lookAhead anyChar) <|> pure Nothing
   case p of
     Just '\\' -> (<>) <$> f <*> parseDocument f
-    Just _ -> (<>) <$> (doc <$> many (notChar '\\')) <*> parseDocument f
-    Nothing -> pure []
+    Just _ -> (<>) <$> (kdoc <$> many (notChar '\\')) <*> parseDocument f
+    Nothing -> pure mempty
 
 
 prose :: QuasiQuoter
