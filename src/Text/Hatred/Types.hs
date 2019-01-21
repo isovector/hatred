@@ -42,6 +42,14 @@ instance (Functor f, Functor (OneOf fs)) => Functor (OneOf (f ': fs)) where
   fmap f (Cons a) = Cons $ bimap (fmap f) (fmap f) a
 
 
+instance {-# OVERLAPPING #-} Foldable f => Foldable (OneOf '[f]) where
+  foldMap f (One a) = foldMap f a
+
+instance (Foldable f, Foldable (OneOf fs)) => Foldable (OneOf (f ': fs)) where
+  foldMap f (Cons (Left a))  = foldMap f a
+  foldMap f (Cons (Right a)) = foldMap f a
+
+
 instance {-# OVERLAPPING #-} Show (f x) => Show (OneOf '[f] x) where
   show (One a) = show a
 
