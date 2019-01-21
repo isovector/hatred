@@ -1,37 +1,15 @@
-{-# LANGUAGE ConstraintKinds           #-}
 {-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE EmptyCase                 #-}
 {-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE PartialTypeSignatures     #-}
-{-# LANGUAGE PolyKinds                 #-}
-{-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeApplications          #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TypeFamilyDependencies    #-}
 {-# LANGUAGE TypeOperators             #-}
-{-# OPTIONS_GHC -ddump-splices         #-}
 
 module Text.Hatred.Lib where
 
-import Control.Monad
 import Control.Applicative
 import Data.Char (isSpace)
-import Data.Coerce
-import Data.Foldable
-import Data.Functor.Const
 import Data.Monoid ((<>))
-import Language.Haskell.TH.Quote
-import Text.Hatred.TH
 import Text.Hatred.Types
-import Text.Megaparsec
-import Text.Megaparsec.Char
-import Text.RawString.QQ
 
 
 ------------------------------------------------------------------------------
@@ -49,10 +27,10 @@ cata f (Doc z) = foldMap (f . fmap (cata f)) z
 ------------------------------------------------------------------------------
 -- | Fold a document monadically.
 cataM
-    :: ( Functor (OneOf fs)
+    :: ( Foldable (OneOf fs)
+       , Functor (OneOf fs)
        , Monad m
        , Monoid a
-       , Foldable (OneOf fs)
        )
     => (OneOf fs a -> m a)
     -> Doc fs
@@ -60,6 +38,18 @@ cataM
 cataM f = foldr (liftA2 (<>) . cataM f . Doc . pure)
                 (pure mempty)
         . unDoc
+
+
+------------------------------------------------------------------------------
+-- | Only keep a single capacity.
+only
+    :: forall f fs
+     . ( Functor (OneOf fs)
+       , Member f fs
+       )
+    => Doc fs
+    -> Doc '[f]
+only = cata (maybe mempty doc . cast @f)
 
 
 ------------------------------------------------------------------------------
